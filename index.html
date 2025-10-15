@@ -138,7 +138,6 @@ label {
 <div class="form-wrapper">
   <h2 class="form-heading">Registration for Data Center Campus Visit</h2>
 
-  <!-- ✅ Thank You Message -->
   <div id="thankYouMessage">
     🎉 Thank you for booking your visit! <br>
     We’ve received your details and will contact you soon.
@@ -176,7 +175,6 @@ label {
         <input class="form-input-field" type="text" id="jobTitle" name="jobTitle" required>
       </div>
 
-      <!-- Data Center Campus -->
       <div class="form-col-md">
         <label>Data Center Campus *</label>
         <select class="form-select-field" id="location" name="location" required>
@@ -190,7 +188,6 @@ label {
         </select>
       </div>
 
-      <!-- Number of People Visiting -->
       <div class="form-col-md">
         <label>Number of People Visiting *</label>
         <select class="form-select-field" id="numPeople" name="numPeople" required>
@@ -221,7 +218,6 @@ label {
         </div>
       </div>
 
-      <!-- Slot Time -->
       <div class="form-col-md">
         <label>Slot Time *</label>
         <select class="form-select-field" id="slot" name="slot" required>
@@ -233,15 +229,15 @@ label {
       </div>
     </div>
 
-    <!-- Submit -->
     <div class="form-col-lg form-submit-wrapper">
       <button class="form-submit-button" type="submit">Submit</button>
     </div>
   </form>
 </div>
 
-<!-- ✅ Firestore Integration Script -->
+<!-- ✅ Calendar + Firestore Integration -->
 <script type="module">
+  // Import Firebase
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
   import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
@@ -257,6 +253,70 @@ label {
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
+  // ✅ Calendar Functionality
+  const display = document.getElementById('displayDate');
+  const hidden = document.getElementById('visitDate');
+  const popup = document.getElementById('calendarPopup');
+  const monthYear = document.getElementById('monthYear');
+  const prev = document.getElementById('prevMonth');
+  const next = document.getElementById('nextMonth');
+  const daysContainer = document.getElementById('daysContainer');
+  const wrapper = document.getElementById('datePickerWrapper');
+
+  let viewDate = new Date();
+  viewDate.setHours(0, 0, 0, 0);
+
+  function isDisabledDate(date) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const minAllowed = new Date(today); minAllowed.setDate(today.getDate() + 3);
+    const day = date.getDay();
+    if (date < minAllowed) return true;
+    if (day < 2 || day > 5) return true; // only Tue–Fri
+    return false;
+  }
+
+  function renderCalendar() {
+    daysContainer.innerHTML = '';
+    const year = viewDate.getFullYear(), month = viewDate.getMonth();
+    const first = new Date(year, month, 1), last = new Date(year, month + 1, 0);
+    const start = first.getDay();
+    monthYear.textContent = first.toLocaleString('default', { month: 'long', year: 'numeric' });
+    for (let i = 0; i < start; i++) {
+      const e = document.createElement('div');
+      e.className = 'day empty';
+      daysContainer.appendChild(e);
+    }
+    for (let d = 1; d <= last.getDate(); d++) {
+      const dt = new Date(year, month, d);
+      const btn = document.createElement('div');
+      btn.textContent = d;
+      btn.className = 'day';
+      if (isDisabledDate(dt)) btn.classList.add('disabled');
+      else {
+        btn.addEventListener('click', () => {
+          daysContainer.querySelectorAll('.day.selected').forEach(e => e.classList.remove('selected'));
+          btn.classList.add('selected');
+          const formatted = `${String(d).padStart(2,'0')}-${String(month+1).padStart(2,'0')}-${year}`;
+          display.value = formatted;
+          hidden.value = formatted;
+          popup.style.display = 'none';
+        });
+      }
+      daysContainer.appendChild(btn);
+    }
+  }
+
+  display.addEventListener('click', e => {
+    e.stopPropagation();
+    popup.style.display = popup.style.display === 'block' ? 'none' : 'block';
+    renderCalendar();
+  });
+  prev.addEventListener('click', () => { viewDate.setMonth(viewDate.getMonth() - 1); renderCalendar(); });
+  next.addEventListener('click', () => { viewDate.setMonth(viewDate.getMonth() + 1); renderCalendar(); });
+  document.addEventListener('click', e => { if (!wrapper.contains(e.target)) popup.style.display = 'none'; });
+  renderCalendar();
+
+  // ✅ Handle Form Submission
   document.getElementById("bookingForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const form = e.target;
