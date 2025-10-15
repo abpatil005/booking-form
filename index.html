@@ -6,7 +6,6 @@
 <title>Data Center Visit Registration</title>
 
 <style>
-/* --- Base Form Styling --- */
 body {
   font-family: Arial, sans-serif;
   background: #f5f7fa;
@@ -138,6 +137,7 @@ label {
 <div class="form-wrapper">
   <h2 class="form-heading">Registration for Data Center Campus Visit</h2>
 
+  <!-- ✅ Thank You Message -->
   <div id="thankYouMessage">
     🎉 Thank you for booking your visit! <br>
     We’ve received your details and will contact you soon.
@@ -175,6 +175,7 @@ label {
         <input class="form-input-field" type="text" id="jobTitle" name="jobTitle" required>
       </div>
 
+      <!-- Data Center Campus -->
       <div class="form-col-md">
         <label>Data Center Campus *</label>
         <select class="form-select-field" id="location" name="location" required>
@@ -188,6 +189,7 @@ label {
         </select>
       </div>
 
+      <!-- Number of People Visiting -->
       <div class="form-col-md">
         <label>Number of People Visiting *</label>
         <select class="form-select-field" id="numPeople" name="numPeople" required>
@@ -218,6 +220,7 @@ label {
         </div>
       </div>
 
+      <!-- Slot Time -->
       <div class="form-col-md">
         <label>Slot Time *</label>
         <select class="form-select-field" id="slot" name="slot" required>
@@ -235,11 +238,10 @@ label {
   </form>
 </div>
 
-<!-- ✅ Calendar + Firestore Integration -->
+<!-- ✅ Firebase + Logic -->
 <script type="module">
-  // Import Firebase
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAmZIMFkkA_ACNRHCD8H08rN2RIVUtDsik",
@@ -253,7 +255,7 @@ label {
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // ✅ Calendar Functionality
+  // 🗓️ Calendar & Slot logic
   const display = document.getElementById('displayDate');
   const hidden = document.getElementById('visitDate');
   const popup = document.getElementById('calendarPopup');
@@ -262,88 +264,136 @@ label {
   const next = document.getElementById('nextMonth');
   const daysContainer = document.getElementById('daysContainer');
   const wrapper = document.getElementById('datePickerWrapper');
+  const slotSelect = document.getElementById('slot');
+  const locationSelect = document.getElementById('location');
 
   let viewDate = new Date();
-  viewDate.setHours(0, 0, 0, 0);
+  viewDate.setHours(0,0,0,0);
 
-  function isDisabledDate(date) {
-    const today = new Date(); today.setHours(0,0,0,0);
-    const minAllowed = new Date(today); minAllowed.setDate(today.getDate() + 3);
-    const day = date.getDay();
-    if (date < minAllowed) return true;
-    if (day < 2 || day > 5) return true; // only Tue–Fri
+  function isDisabledDate(date){
+    const today=new Date();today.setHours(0,0,0,0);
+    const minAllowed=new Date(today);minAllowed.setDate(today.getDate()+3);
+    const day=date.getDay();
+    if(date<minAllowed)return true;
+    if(day<2||day>5)return true;
     return false;
   }
 
-  function renderCalendar() {
-    daysContainer.innerHTML = '';
-    const year = viewDate.getFullYear(), month = viewDate.getMonth();
-    const first = new Date(year, month, 1), last = new Date(year, month + 1, 0);
-    const start = first.getDay();
-    monthYear.textContent = first.toLocaleString('default', { month: 'long', year: 'numeric' });
-    for (let i = 0; i < start; i++) {
-      const e = document.createElement('div');
-      e.className = 'day empty';
-      daysContainer.appendChild(e);
-    }
-    for (let d = 1; d <= last.getDate(); d++) {
-      const dt = new Date(year, month, d);
-      const btn = document.createElement('div');
-      btn.textContent = d;
-      btn.className = 'day';
-      if (isDisabledDate(dt)) btn.classList.add('disabled');
-      else {
-        btn.addEventListener('click', () => {
-          daysContainer.querySelectorAll('.day.selected').forEach(e => e.classList.remove('selected'));
+  function renderCalendar(){
+    daysContainer.innerHTML='';
+    const year=viewDate.getFullYear(),month=viewDate.getMonth();
+    const first=new Date(year,month,1),last=new Date(year,month+1,0);
+    const start=first.getDay();
+    monthYear.textContent=first.toLocaleString('default',{month:'long',year:'numeric'});
+    for(let i=0;i<start;i++){const e=document.createElement('div');e.className='day empty';daysContainer.appendChild(e);}
+    for(let d=1;d<=last.getDate();d++){
+      const dt=new Date(year,month,d);
+      const btn=document.createElement('div');
+      btn.textContent=d;btn.className='day';
+      if(isDisabledDate(dt))btn.classList.add('disabled');
+      else{
+        btn.addEventListener('click',()=>{
+          daysContainer.querySelectorAll('.day.selected').forEach(e=>e.classList.remove('selected'));
           btn.classList.add('selected');
-          const formatted = `${String(d).padStart(2,'0')}-${String(month+1).padStart(2,'0')}-${year}`;
-          display.value = formatted;
-          hidden.value = formatted;
-          popup.style.display = 'none';
+          const formatted=`${String(d).padStart(2,'0')}-${String(month+1).padStart(2,'0')}-${year}`;
+          display.value=formatted;hidden.value=formatted;
+          popup.style.display='none';
+          updateSlotAvailability();
         });
       }
       daysContainer.appendChild(btn);
     }
   }
 
-  display.addEventListener('click', e => {
-    e.stopPropagation();
-    popup.style.display = popup.style.display === 'block' ? 'none' : 'block';
-    renderCalendar();
-  });
-  prev.addEventListener('click', () => { viewDate.setMonth(viewDate.getMonth() - 1); renderCalendar(); });
-  next.addEventListener('click', () => { viewDate.setMonth(viewDate.getMonth() + 1); renderCalendar(); });
-  document.addEventListener('click', e => { if (!wrapper.contains(e.target)) popup.style.display = 'none'; });
+  display.addEventListener('click',e=>{e.stopPropagation();popup.style.display=popup.style.display==='block'?'none':'block';renderCalendar();});
+  prev.addEventListener('click',()=>{viewDate.setMonth(viewDate.getMonth()-1);renderCalendar();});
+  next.addEventListener('click',()=>{viewDate.setMonth(viewDate.getMonth()+1);renderCalendar();});
+  document.addEventListener('click',e=>{if(!wrapper.contains(e.target))popup.style.display='none';});
   renderCalendar();
 
-  // ✅ Handle Form Submission
-  document.getElementById("bookingForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const form = e.target;
-    const thankYou = document.getElementById("thankYouMessage");
+  // ✅ Dynamic slot disable
+  async function updateSlotAvailability(){
+    const selectedDate=hidden.value;
+    const selectedLocation=locationSelect.value;
+    if(!selectedDate||!selectedLocation)return;
 
-    const data = {
-      firstName: form.firstName.value,
-      lastName: form.lastName.value,
-      email: form.email.value,
-      mobile: form.mobile.value,
-      company: form.company.value,
-      jobTitle: form.jobTitle.value,
-      location: form.location.value,
-      numPeople: form.numPeople.value,
-      date: form.visitDate.value,
-      slot: form.slot.value,
-      timestamp: new Date().toISOString()
-    };
+    Array.from(slotSelect.options).forEach(opt=>{
+      if(opt.value){
+        opt.disabled=false;
+        opt.style.background="#fff";
+        opt.style.color="#000";
+      }
+    });
 
-    try {
-      await addDoc(collection(db, "bookings"), data);
-      form.style.display = "none";
-      thankYou.style.display = "block";
-    } catch (error) {
-      console.error("Error saving booking: ", error);
-      alert("Error submitting form. Please try again.");
+    const q=query(collection(db,"bookings"),
+      where("date","==",selectedDate),
+      where("location","==",selectedLocation)
+    );
+    const snapshot=await getDocs(q);
+    const slotCounts={};
+    snapshot.forEach(doc=>{
+      const slot=doc.data().slot;
+      slotCounts[slot]=(slotCounts[slot]||0)+1;
+    });
+
+    for(const[slot,count] of Object.entries(slotCounts)){
+      if(count>=2){
+        const opt=Array.from(slotSelect.options).find(o=>o.value===slot);
+        if(opt){
+          opt.disabled=true;
+          opt.style.background="#ddd";
+          opt.style.color="#888";
+        }
+      }
     }
+  }
+
+  locationSelect.addEventListener('change',updateSlotAvailability);
+  display.addEventListener('change',updateSlotAvailability);
+
+  // ✅ Form submission
+  document.getElementById("bookingForm").addEventListener("submit",async e=>{
+    e.preventDefault();
+    const form=e.target;
+    const thankYou=document.getElementById("thankYouMessage");
+
+    const selectedDate=form.visitDate.value;
+    const selectedSlot=form.slot.value;
+    const selectedLocation=form.location.value;
+
+    if(!selectedDate||!selectedSlot||!selectedLocation){
+      alert("Please select date, slot, and data center.");
+      return;
+    }
+
+    const q=query(collection(db,"bookings"),
+      where("date","==",selectedDate),
+      where("slot","==",selectedSlot),
+      where("location","==",selectedLocation)
+    );
+    const querySnapshot=await getDocs(q);
+    if(querySnapshot.size>=2){
+      alert("❌ This slot is full for this data center.");
+      updateSlotAvailability();
+      return;
+    }
+
+    await addDoc(collection(db,"bookings"),{
+      firstName:form.firstName.value,
+      lastName:form.lastName.value,
+      email:form.email.value,
+      mobile:form.mobile.value,
+      company:form.company.value,
+      jobTitle:form.jobTitle.value,
+      location:selectedLocation,
+      numPeople:form.numPeople.value,
+      date:selectedDate,
+      slot:selectedSlot,
+      timestamp:new Date().toISOString()
+    });
+
+    form.style.display="none";
+    thankYou.style.display="block";
   });
 </script>
 </body>
