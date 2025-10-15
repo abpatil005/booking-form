@@ -316,7 +316,7 @@ document.getElementById("bookingForm").addEventListener("submit", async function
     slot: form.slot.value
   };
 
-  const response = await fetch("https://script.google.com/macros/s/AKfycbz2vwT97AJ6iJjJ7nYCukBKN0fCYiOeMZVJLX66F0eM6g_LsxisoPpkm_WWRIBmeQBkvQ/exec", {
+  const response = await fetch("https://script.google.com/macros/s/AKfycbzBtkVocIShHAQjB2lahl0J8MabMddQkSPL3gsEMDmtkhfynMwNbVJsruKs7DZWQkv7bQ/exec", {
     method: "POST",
     body: JSON.stringify(data),
     headers: { "Content-Type": "application/json" },
@@ -334,4 +334,5 @@ document.getElementById("bookingForm").addEventListener("submit", async function
 </script>
 </body>
 </html>
+
 
