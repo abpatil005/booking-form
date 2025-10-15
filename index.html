@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Center Visit Registration</title>
+
+<style>
+/* --- Base Form Styling --- */
+body {
+  font-family: Arial, sans-serif;
+  background: #f5f7fa;
+  margin: 0;
+  padding: 20px;
+}
+.form-wrapper {
+  max-width: 900px;
+  margin: 0 auto;
+  background: #fff;
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.form-heading {
+  text-align: center;
+  margin-bottom: 25px;
+  font-size: 24px;
+  color: #333;
+}
+.form-input-field, .form-select-field {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  height: 42px;
+  box-sizing: border-box;
+  background: #fff;
+}
+label {
+  font-weight: 500;
+  display: block;
+  margin-bottom: 4px;
+}
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.form-col-md {
+  flex: 1 1 calc(50% - 16px);
+  min-width: 280px;
+}
+.form-col-lg {
+  flex: 1 1 100%;
+  margin-bottom: 16px;
+}
+.form-submit-button {
+  background: #007bff;
+  color: #fff;
+  font-size: 16px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+.form-submit-button:hover {
+  background: #0056b3;
+}
+
+/* ✅ Calendar Styling */
+#datePickerWrapper { position: relative; }
+.calendar-popup {
+  position: absolute;
+  top: 48px;
+  left: 0;
+  width: 100%;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+  z-index: 1000;
+}
+.calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.cal-nav { background: #007bff; color: #fff; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+.month-year { font-weight: 600; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
+.day-name { font-weight: 600; color: #555; font-size: 0.85rem; }
+#daysContainer { grid-column: 1 / span 7; display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.day { padding: 8px 0; background: #f7f7f7; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+.day:hover:not(.disabled) { background: #007bff; color: #fff; }
+.day.selected { background: #007bff; color: #fff; }
+.day.disabled { background: #eee; color: #aaa; cursor: not-allowed; }
+.day.empty { background: transparent; cursor: default; }
+
+/* ✅ Thank You Message */
+#thankYouMessage {
+  display: none;
+  text-align: center;
+  background: #e8f5e9;
+  border: 1px solid #c8e6c9;
+  color: #256029;
+  padding: 25px;
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: 500;
+  animation: fadeIn 0.6s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ✅ Responsive Layout */
+@media (max-width: 900px) {
+  .form-row { gap: 12px; justify-content: center; }
+  .form-col-md {
+    flex: 1 1 90%;
+    max-width: 90%;
+  }
+  .form-wrapper {
+    padding: 0 10px 25px 10px;
+  }
+  .form-submit-wrapper {
+    text-align: center;
+  }
+  .form-submit-button {
+    width: 90%;
+    max-width: 300px;
+  }
+}
+</style>
+</head>
+
+<body>
+<div class="form-wrapper">
+  <h2 class="form-heading">Registration for Data Center Campus Visit</h2>
+
+  <!-- ✅ Thank You Message -->
+  <div id="thankYouMessage">
+    🎉 Thank you for booking your visit! <br>
+    We’ve received your details and will contact you soon.
+  </div>
+
+  <form id="bookingForm">
+    <div class="form-row">
+      <div class="form-col-md">
+        <label>First Name *</label>
+        <input class="form-input-field" type="text" id="firstName" name="firstName" required>
+      </div>
+
+      <div class="form-col-md">
+        <label>Last Name *</label>
+        <input class="form-input-field" type="text" id="lastName" name="lastName" required>
+      </div>
+
+      <div class="form-col-md">
+        <label>Email *</label>
+        <input class="form-input-field" type="email" id="email" name="email" required>
+      </div>
+
+      <div class="form-col-md">
+        <label>Mobile Number *</label>
+        <input class="form-input-field" type="text" id="mobile" name="mobile" maxlength="15" required>
+      </div>
+
+      <div class="form-col-md">
+        <label>Company Name *</label>
+        <input class="form-input-field" type="text" id="company" name="company" required>
+      </div>
+
+      <div class="form-col-md">
+        <label>Job Title *</label>
+        <input class="form-input-field" type="text" id="jobTitle" name="jobTitle" required>
+      </div>
+
+      <!-- Data Center Campus -->
+      <div class="form-col-md">
+        <label>Data Center Campus *</label>
+        <select class="form-select-field" id="location" name="location" required>
+          <option value="">Select Campus</option>
+          <option>Noida 02</option>
+          <option>Kolkata 01</option>
+          <option>Mumbai 03</option>
+          <option>Chennai 02</option>
+          <option>Hyderabad 01</option>
+          <option>Bengaluru 01</option>
+        </select>
+      </div>
+
+      <!-- Number of People Visiting -->
+      <div class="form-col-md">
+        <label>Number of People Visiting *</label>
+        <select class="form-select-field" id="numPeople" name="numPeople" required>
+          <option value="">Select Number</option>
+          <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+        </select>
+      </div>
+
+      <!-- ✅ Custom Calendar -->
+      <div class="form-col-md" id="datePickerWrapper">
+        <label>Date of Visit *</label>
+        <input id="displayDate" class="form-input-field" type="text" placeholder="Select Date (Tue–Fri only)" readonly>
+        <input id="visitDate" name="visitDate" type="hidden" required>
+
+        <div id="calendarPopup" class="calendar-popup" style="display:none;">
+          <div class="calendar-header">
+            <button type="button" id="prevMonth" class="cal-nav">&lt;</button>
+            <div id="monthYear" class="month-year"></div>
+            <button type="button" id="nextMonth" class="cal-nav">&gt;</button>
+          </div>
+          <div class="calendar-grid">
+            <div class="day-name">Su</div><div class="day-name">Mo</div>
+            <div class="day-name">Tu</div><div class="day-name">We</div>
+            <div class="day-name">Th</div><div class="day-name">Fr</div>
+            <div class="day-name">Sa</div>
+            <div id="daysContainer"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slot Time -->
+      <div class="form-col-md">
+        <label>Slot Time *</label>
+        <select class="form-select-field" id="slot" name="slot" required>
+          <option value="">Select Slot</option>
+          <option>9am to 11am</option>
+          <option>12pm to 2pm</option>
+          <option>3pm to 5pm</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <div class="form-col-lg form-submit-wrapper">
+      <button class="form-submit-button" type="submit">Submit</button>
+    </div>
+  </form>
+</div>
+
+<!-- ✅ Script -->
+<script>
+(function() {
+  const display=document.getElementById('displayDate');
+  const hidden=document.getElementById('visitDate');
+  const popup=document.getElementById('calendarPopup');
+  const monthYear=document.getElementById('monthYear');
+  const prev=document.getElementById('prevMonth');
+  const next=document.getElementById('nextMonth');
+  const daysContainer=document.getElementById('daysContainer');
+  const wrapper=document.getElementById('datePickerWrapper');
+
+  let viewDate=new Date();
+  viewDate.setHours(0,0,0,0);
+
+  function isDisabledDate(date){
+    const today=new Date();today.setHours(0,0,0,0);
+    const minAllowed=new Date(today);minAllowed.setDate(today.getDate()+3);
+    const day=date.getDay();
+    if(date<minAllowed)return true;
+    if(day<2||day>5)return true; // only Tue–Fri
+    return false;
+  }
+
+  function render(){
+    daysContainer.innerHTML='';
+    const year=viewDate.getFullYear(),month=viewDate.getMonth();
+    const first=new Date(year,month,1),last=new Date(year,month+1,0);
+    const start=first.getDay();
+    monthYear.textContent=first.toLocaleString('default',{month:'long',year:'numeric'});
+    for(let i=0;i<start;i++){const e=document.createElement('div');e.className='day empty';daysContainer.appendChild(e);}
+    for(let d=1;d<=last.getDate();d++){
+      const dt=new Date(year,month,d);
+      const btn=document.createElement('div');
+      btn.textContent=d;btn.className='day';
+      if(isDisabledDate(dt))btn.classList.add('disabled');
+      else{
+        btn.addEventListener('click',()=>{
+          daysContainer.querySelectorAll('.day.selected').forEach(e=>e.classList.remove('selected'));
+          btn.classList.add('selected');
+          const formatted=`${String(d).padStart(2,'0')}-${String(month+1).padStart(2,'0')}-${year}`;
+          display.value=formatted;hidden.value=formatted;
+          popup.style.display='none';
+        });
+      }
+      daysContainer.appendChild(btn);
+    }
+  }
+
+  display.addEventListener('click',e=>{e.stopPropagation();popup.style.display=popup.style.display==='block'?'none':'block';render();});
+  prev.addEventListener('click',()=>{viewDate.setMonth(viewDate.getMonth()-1);render();});
+  next.addEventListener('click',()=>{viewDate.setMonth(viewDate.getMonth()+1);render();});
+  document.addEventListener('click',e=>{if(!wrapper.contains(e.target))popup.style.display='none';});
+  render();
+})();
+
+// ✅ Handle Submission
+document.getElementById("bookingForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+
+  const form = e.target;
+  const thankYou = document.getElementById("thankYouMessage");
+
+  const data = {
+    firstName: form.firstName.value,
+    lastName: form.lastName.value,
+    email: form.email.value,
+    mobile: form.mobile.value,
+    company: form.company.value,
+    jobTitle: form.jobTitle.value,
+    location: form.location.value,
+    numPeople: form.numPeople.value,
+    date: form.visitDate.value,
+    slot: form.slot.value
+  };
+
+  const response = await fetch("https://script.google.com/macros/s/AKfycbwhQdjS_s1u4ewPZb1sffU3hXUU9Ry4I5kFiDtcLYc5vXo6NqGZsRJYoVbUNOlGc0Sh0g/exec", {
+    method: "POST",
+    body: JSON.stringify(data),
+    headers: { "Content-Type": "application/json" },
+  });
+
+  const result = await response.json();
+
+  if (!result.success) {
+    alert(result.message); // Slot full or error
+  } else {
+    form.style.display = "none"; // hide form
+    thankYou.style.display = "block"; // show thank you message
+  }
+});
+</script>
+</body>
+</html>
