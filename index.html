@@ -240,101 +240,51 @@ label {
   </form>
 </div>
 
-<!-- ✅ Script -->
-<script>
-(function() {
-  const display=document.getElementById('displayDate');
-  const hidden=document.getElementById('visitDate');
-  const popup=document.getElementById('calendarPopup');
-  const monthYear=document.getElementById('monthYear');
-  const prev=document.getElementById('prevMonth');
-  const next=document.getElementById('nextMonth');
-  const daysContainer=document.getElementById('daysContainer');
-  const wrapper=document.getElementById('datePickerWrapper');
+<!-- ✅ Firestore Integration Script -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
-  let viewDate=new Date();
-  viewDate.setHours(0,0,0,0);
-
-  function isDisabledDate(date){
-    const today=new Date();today.setHours(0,0,0,0);
-    const minAllowed=new Date(today);minAllowed.setDate(today.getDate()+3);
-    const day=date.getDay();
-    if(date<minAllowed)return true;
-    if(day<2||day>5)return true; // only Tue–Fri
-    return false;
-  }
-
-  function render(){
-    daysContainer.innerHTML='';
-    const year=viewDate.getFullYear(),month=viewDate.getMonth();
-    const first=new Date(year,month,1),last=new Date(year,month+1,0);
-    const start=first.getDay();
-    monthYear.textContent=first.toLocaleString('default',{month:'long',year:'numeric'});
-    for(let i=0;i<start;i++){const e=document.createElement('div');e.className='day empty';daysContainer.appendChild(e);}
-    for(let d=1;d<=last.getDate();d++){
-      const dt=new Date(year,month,d);
-      const btn=document.createElement('div');
-      btn.textContent=d;btn.className='day';
-      if(isDisabledDate(dt))btn.classList.add('disabled');
-      else{
-        btn.addEventListener('click',()=>{
-          daysContainer.querySelectorAll('.day.selected').forEach(e=>e.classList.remove('selected'));
-          btn.classList.add('selected');
-          const formatted=`${String(d).padStart(2,'0')}-${String(month+1).padStart(2,'0')}-${year}`;
-          display.value=formatted;hidden.value=formatted;
-          popup.style.display='none';
-        });
-      }
-      daysContainer.appendChild(btn);
-    }
-  }
-
-  display.addEventListener('click',e=>{e.stopPropagation();popup.style.display=popup.style.display==='block'?'none':'block';render();});
-  prev.addEventListener('click',()=>{viewDate.setMonth(viewDate.getMonth()-1);render();});
-  next.addEventListener('click',()=>{viewDate.setMonth(viewDate.getMonth()+1);render();});
-  document.addEventListener('click',e=>{if(!wrapper.contains(e.target))popup.style.display='none';});
-  render();
-})();
-
-// ✅ Handle Submission
-document.getElementById("bookingForm").addEventListener("submit", async function(e) {
-  e.preventDefault();
-
-  const form = e.target;
-  const thankYou = document.getElementById("thankYouMessage");
-
-  const data = {
-    firstName: form.firstName.value,
-    lastName: form.lastName.value,
-    email: form.email.value,
-    mobile: form.mobile.value,
-    company: form.company.value,
-    jobTitle: form.jobTitle.value,
-    location: form.location.value,
-    numPeople: form.numPeople.value,
-    date: form.visitDate.value,
-    slot: form.slot.value
+  const firebaseConfig = {
+    apiKey: "AIzaSyAmZIMFkkA_ACNRHCD8H08rN2RIVUtDsik",
+    authDomain: "datacentervisit.firebaseapp.com",
+    projectId: "datacentervisit",
+    storageBucket: "datacentervisit.firebasestorage.app",
+    messagingSenderId: "433488614105",
+    appId: "1:433488614105:web:46f5997fecc0939c68a4c8"
   };
 
-  const response = await fetch("https://script.google.com/macros/s/AKfycbxLpGUP9B-uyYiJ3MDpEw1kootOFMGCtq-dcbtZVkk6DWXGc5eanRO0SqakUXdW7_TSQg/exec", {
-    method: "POST",
-    body: JSON.stringify(data),
-    headers: { "Content-Type": "application/json" },
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  document.getElementById("bookingForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const thankYou = document.getElementById("thankYouMessage");
+
+    const data = {
+      firstName: form.firstName.value,
+      lastName: form.lastName.value,
+      email: form.email.value,
+      mobile: form.mobile.value,
+      company: form.company.value,
+      jobTitle: form.jobTitle.value,
+      location: form.location.value,
+      numPeople: form.numPeople.value,
+      date: form.visitDate.value,
+      slot: form.slot.value,
+      timestamp: new Date().toISOString()
+    };
+
+    try {
+      await addDoc(collection(db, "bookings"), data);
+      form.style.display = "none";
+      thankYou.style.display = "block";
+    } catch (error) {
+      console.error("Error saving booking: ", error);
+      alert("Error submitting form. Please try again.");
+    }
   });
-
-  const result = await response.json();
-
-  if (!result.success) {
-    alert(result.message); // Slot full or error
-  } else {
-    form.style.display = "none"; // hide form
-    thankYou.style.display = "block"; // show thank you message
-  }
-});
 </script>
 </body>
 </html>
-
-
-
-
